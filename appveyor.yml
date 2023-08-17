@@ -1,0 +1,27 @@
+image: Visual Studio 2022
+
+environment:
+  # Needed for GitVersion to work better
+  IGNORE_NORMALISATION_GIT_HEAD_MOVE: 1
+  # 'packages_pat_public' PAT (classic)
+  GITHUB_TOKEN:
+    secure: ESUR8UUfZGeT7sNRirn7b3q1TlUrivATlUpdIlpa2iuf86oKj47cBWPowG3nJP8w
+
+init:
+  - git config --global core.autocrlf true
+
+install:
+  - dotnet --info
+  # The last part will make CMD ignore any non-zero exit codes from 'dotnet --version'
+  - dotnet --version & exit 0
+
+before_build:
+  # GitHub does not yet support anonymous access to public NuGet repositories.
+  - ps: dotnet nuget add source "https://nuget.pkg.github.com/maxild/index.json" --username maxild --password $env:GITHUB_TOKEN --store-password-in-clear-text --name github-maxild
+
+build_script:
+  - ps: .\build.ps1 -verbose -verbosity diagnostic
+
+test: off
+
+deploy: off

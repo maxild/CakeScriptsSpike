@@ -1,0 +1,4 @@
+# Auto detect text files and perform LF normalization
+* text=auto encoding=UTF-8
+*.sh text eol=lf
+build.config text eol=lf
