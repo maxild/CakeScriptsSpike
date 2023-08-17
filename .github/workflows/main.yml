@@ -1,0 +1,69 @@
+name: Build
+on:
+  # on all pushes
+  push:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    # GitHub Actions does not respect [skip ci], so we add the feature ourselves.
+    # Instead of using contains we use startsWith such that merges of many commits
+    # where the message contains [skip ci] of some of the commits are not skipped
+    # AppVeyor searches for [skip ci] in the commit message title only (first line),
+    # startWith is a quick-fix that enable (almost) the same feature we always write
+    # [skip ci] at the beginning of the title.
+    if: "!startsWith(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - name: Get the sources (without getting submodules)
+        uses: actions/checkout@v2
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --prune --unshallow
+
+      # - name: Get the sources and Fetch all history for all tags and branches
+      #   uses: actions/checkout@v2
+      #   with:
+      #     fetch-depth: '0'
+      #     submodules: 'recursive'
+
+      # NOTE: If specific/forced SDK version is needed uncomment below
+      # - name: Setup .NET Core SDK
+      #   uses: actions/setup-dotnet@v1.7.2
+      #   with:
+      #     dotnet-version: 5.0.102
+
+      - name: Inspect pre-installed .NET SDK
+        run: |
+          dotnet --info || true
+          dotnet --version || true
+
+      - name: Inspect environment variables
+        run: |
+          Get-ChildItem env:
+        shell: pwsh
+
+        # Using GitHub Packages requires a PAT (GITHUB_TOKEN is automatically created by Github actions)
+-     - name: Add source and credentials to Github Packages
+        run: |
+          dotnet nuget add source "https://nuget.pkg.github.com/maxild/index.json" --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github-maxild
+
+      - name: Run Cake script on Linux/MacOS
+        if: runner.os == 'Linux' || runner.os == 'MacOS'
+        env:
+          IGNORE_NORMALISATION_GIT_HEAD_MOVE: 1
+        run: ./build.sh --verbosity=diagnostic
+        shell: bash
+
+      - name: Run Cake script on Windows
+        if: runner.os == 'Windows'
+        env:
+          IGNORE_NORMALISATION_GIT_HEAD_MOVE: 1
+        run: .\build.ps1 -verbose --verbosity=diagnostic
+        shell: pwsh
