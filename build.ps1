@@ -133,7 +133,7 @@ function createDummySdkProject($cakeScriptVersion) {
         <TargetFramework>net6.0</TargetFramework>
         <!--
             Path to the user packages folder. All downloaded packages are extracted here.
-            Equivalent to -packages in dotnet restore.
+            Equivalent to '-''-'packages option arg in dotnet restore.
 
             The RestorePackagesPath MSBuild property can be used to override the
             global packages folder location when a project uses a PackageReference.
@@ -242,15 +242,8 @@ if (($ParsedFoundDotNetSdkVersion.Major -ne $ParsedDotNetSdkVersion.Major) -or `
 ###########################################################################
 
 if (-not (Test-Path (Join-Path $TOOLS_DIR 'Maxfire.CakeScripts'))) {
-  # latest or empty string is interpreted as 'just use the latest' (floating version, not determinsitic)
-  if ( ($CakeScriptsVersion -eq "latest") -or [string]::IsNullOrWhitespace($CakeScriptsVersion) ) {
-    & dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --package-directory "$TOOLS_DIR" `
-      --source 'https://nuget.pkg.github.com/maxild/index.json' | Out-Null
-  }
-  else {
-    & dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --version $CakeScriptsVersion --package-directory "$TOOLS_DIR" `
-      --source 'https://nuget.pkg.github.com/maxild/index.json' | Out-Null
-  }
+  & dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --version $CakeScriptsVersion --package-directory "$TOOLS_DIR" `
+    --source 'https://nuget.pkg.github.com/maxild/index.json' | Out-Null
   if ($LASTEXITCODE -ne 0) {
     Throw "Failed to download Maxfire.CakeScripts."
   }

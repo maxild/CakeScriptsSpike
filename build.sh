@@ -60,7 +60,7 @@ cat << EOF > ./tools/Dummy.csproj
         <TargetFramework>net6.0</TargetFramework>
         <!--
             Path to the user packages folder. All downloaded packages are extracted here.
-            Equivalent to -packages in dotnet restore.
+            Equivalent to '-''-'packages option arg in dotnet restore.
 
             The RestorePackagesPath MSBuild property can be used to override the
             global packages folder location when a project uses a PackageReference.
@@ -200,16 +200,13 @@ install_tool 'gitreleasemanager.tool' 'dotnet-gitreleasemanager' "$GITRELEASEMAN
 # INSTALL CakeScripts
 ###########################################################################
 
-if [ ! -d "$TOOLS_DIR/Maxfire.CakeScripts" ]; then
-  # latest or empty string is interpreted as 'just use the latest' (floating version, not determinsitic)
-  if [[ $CAKESCRIPTS_VERSION == "latest" ]] || [[ -z "$CAKESCRIPTS_VERSION" ]]; then
-    dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --package-directory "$TOOLS_DIR" \
-      --source 'https://nuget.pkg.github.com/maxild/index.json' >/dev/null 2>&1
-  else
-    dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --version "$CakeScriptsVersion" --package-directory "$TOOLS_DIR" \
-      --source 'https://nuget.pkg.github.com/maxild/index.json' >/dev/null 2>&1
-  fi
-
+# PackageIds are case insensitive in NuGet so to prevent ambiguity they are always
+# installed in the global packages folder with lowercase names.
+# See https://github.com/dotnet/sdk/issues/10199#issuecomment-480918289
+if [ ! -d "$TOOLS_DIR/maxfire.cakescripts" ]; then
+  echo "Installing version $CAKESCRIPTS_VERSION of Maxfire.CakeScripts..."
+  dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --version "$CAKESCRIPTS_VERSION" --package-directory "$TOOLS_DIR" \
+    --source 'https://nuget.pkg.github.com/maxild/index.json' >/dev/null 2>&1
   # shellcheck disable=SC2181
   if [ $? -ne 0 ]; then
     error_exit "Failed to download Maxfire.CakeScripts."
@@ -217,7 +214,8 @@ if [ ! -d "$TOOLS_DIR/Maxfire.CakeScripts" ]; then
 else
   # Maxfire.CakeScripts is already installed, check what version is installed
   CAKESCRIPTS_INSTALLED_VERSION='0.0.0'
-  versionTxtPath="$TOOLS_DIR/Maxfire.CakeScripts/content/version.txt"
+  # FIXME: Does not work unless version is not part of download path
+  versionTxtPath="$TOOLS_DIR/maxfire.cakescripts/content/version.txt"
   if [[ -f "$versionTxtPath" ]]; then
     CAKESCRIPTS_INSTALLED_VERSION=$(cat "$versionTxtPath")
   fi
@@ -226,7 +224,7 @@ else
 
   if [[ "$CAKESCRIPTS_VERSION" != "$CAKESCRIPTS_INSTALLED_VERSION" ]]; then
     echo "Upgrading to version $CAKESCRIPTS_VERSION of Maxfire.CakeScripts..."
-    dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --version "$CakeScriptsVersion" --package-directory "$TOOLS_DIR" \
+    dotnet add ./tools/Dummy.csproj package Maxfire.CakeScripts --version "$CAKESCRIPTS_VERSION" --package-directory "$TOOLS_DIR" \
       --source 'https://nuget.pkg.github.com/maxild/index.json' >/dev/null 2>&1
     # shellcheck disable=SC2181
     if [ $? -ne 0 ]; then
